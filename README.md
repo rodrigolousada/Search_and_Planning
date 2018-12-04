@@ -1,2 +1,2 @@
-# Seach_and_Planning
+# Search_and_Planning
 Group Project of Search and Planning
