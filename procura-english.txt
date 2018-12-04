@@ -1,0 +1,91 @@
+
+Usage Information
+---------------------------
+
+In the file "procura.lisp" you can find some of the search algorithms
+to be used in the Search and Planning course.
+
+You can find the implementation of non-informed and informed search algorithms.
+
+The implemented non-informed search algorithms are:
+- Breadth first search -> "largura"
+- Depth first search -> "profundidade"
+- Iterative depth first seach -> "profundidade-iterativa"
+
+The implemented informed search algorithms are:
+- A* search -> "a*"
+- IDA* serach -> "ida*"
+
+
+
+To be able to use the implemented algorithms you need to:
+
+1. Compile the file with the Lisp code:
+
+     (compile-file "procura.lisp")
+
+2. Load the compiled file:
+
+     (load "procura")
+
+3. Create a problem by using the function:
+
+     (cria-problema <initial state>
+                    <list of operators>
+                    :objectivo? <function that tests the final state>
+                    :estado= <equality function for states>
+                    :hash <function that gives the hashing value for a state>
+                    :custo <function that gives the generation cost of a state>
+                    :heuristica <function that evaluates a state>)
+
+   The keyword parameter :cost corresponds to a function that receives
+   a state and returns its generation cost, that is, the cost of
+   transition from its father to it. This function is only used in
+   algorithms A* and IDA* to compute the "g" of each node. By default,
+   this parameter takes as value a function that always returns 1.
+
+4. Solve the problem created in point 3, using the function
+
+     (procura <problem>
+              <search type>
+              :profundidade-maxima <integer representing the maximun depth> 
+              :espaco-em-arvore? <tree search space: t or nil>)
+
+   The <search type> parameter can be any of the following
+   list ("largura" "profundidade" "profundidade-iterativa" "a*" "ida*"),
+   see list of algorithms above.
+
+   The keyword :profundidade-maxima, maximum depth, only makes sense for the  
+   algorithms "profundidade" and "profundidade-iterativa", being optional 
+   nonetheless.
+   
+   The keyword :espaco-em-arvore? indicates to the search algorithms if the
+   state of the problem to be solved is a tree instead of a graph. If so,
+   the algorithms can use this information to run faster.
+
+   For example, to solve a problem created earlier using a breadth first
+   search, it would be enough to evaluate:
+
+     (procura prob1 "largura")
+
+   and, for a depth first search first with a depth limit of 4:
+
+     (procura prob1 "profundidade" :profundidade-maxima 4)
+
+   This function returns a list of four elements, in the following order:
+
+     - Solution found for the problem (list of states from the
+       initial state up to the final state), or NIL if no solution
+       was found.
+
+     - Time spent on searching. This value is obtained from the function
+       get-internal-run-time. To get values ​​in seconds, you should
+       divide this value by the internal-time-units-per-second constant.
+
+     - Number of nodes expanded during the search.
+
+     - Number of nodes generated during the search.
+     
+
+             -------------------- X --------------------
+
