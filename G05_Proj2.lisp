@@ -13,7 +13,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                        Global Var
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setf )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                        Structure
@@ -73,20 +73,40 @@
 		
 			
 		(cond 
-			( 	(and 	(>= (trip-instant_departure trip_non_al) (trip-instant_arrival (nth 0 (last (nth trip_i state_trip_list) )))) 
-						(equal (trip-local_departure trip_non_al) (trip-local_arrival (nth 0 (last (nth trip_i state_trip_list)))) )
+			( 	(and
+					(or 	(and 	(equal (trip-local_departure trip_non_al) (trip-local_arrival (nth 0 (last (nth trip_i state_trip_list)))) )
+									(>= (trip-instant_departure trip_non_al) (trip-instant_arrival (nth 0 (last (nth trip_i state_trip_list) )))) ) 
+							(and 	(not (equal (trip-local_departure trip_non_al) (trip-local_arrival (nth 0 (last (nth trip_i state_trip_list)))) ))
+									(>= (trip-instant_departure trip_non_al) (+ (trip-instant_arrival (nth 0 (last (nth trip_i state_trip_list) ))) 40) ))
+					)
+					(or 	(or 	(and 	(and 	(equal L1 (trip-local_departure (nth 0 (first (nth trip_i state_trip_list)))) )
+													(equal L1 (trip-local_arrival trip_non_al) ))
+											(> 480 (- (trip-instant_arrival trip_non_al) (trip-instant_departure (nth 0 (first (nth trip_i state_trip_list)))))) )
+									(and 	(and 	(equal L1 (trip-local_departure (nth 0 (first (nth trip_i state_trip_list)))) )
+													(not (equal L1 (trip-local_arrival trip_non_al) )))
+											(> 480 (- (+ (trip-instant_arrival trip_non_al) 40) (trip-instant_departure (nth 0 (first (nth trip_i state_trip_list)))))))
+							)
+							(or 	(and 	(and 	(not (equal L1 (trip-local_departure (nth 0 (first (nth trip_i state_trip_list)))) ))
+													(equal L1 (trip-local_arrival trip_non_al) ))
+											(> 480 (- (trip-instant_arrival trip_non_al) (- (trip-instant_departure (nth 0 (first (nth trip_i state_trip_list)))) 40) )) )
+									(and 	(and 	(not (equal L1 (trip-local_departure (nth 0 (first (nth trip_i state_trip_list)))) ))
+													(not (equal L1 (trip-local_arrival trip_non_al) )))
+											(> 480 (- (+ (trip-instant_arrival trip_non_al) 40) (- (trip-instant_departure (nth 0 (first (nth trip_i state_trip_list)))) 40) )))
+							)
+					)
 				)
+				( (setf last_meal (trip-local_departure (nth 0 (first (nth trip_i state_trip_list)))))
+					(if (or	(<= (- (trip-instant_arrival trip_non_al) last_meal) 240)
+							(<=    (+ (trip-local_arrival (nth 0 (last (nth trip_i state_trip_list)))) 40) (trip-instant_departure trip_non_al))
+						)
+						(setf new_copy_state (make-state-copy copy_state))
+						(setf (nth trip_i (shifts-trips_list new_copy_state)) (append (nth trip_i (shifts-trips_list new_copy_state)) (list trip_non_al)) )
+						(setf list_successors (append list_successors (list new_copy_state)))	
+					)
+				)
+			)
+
 			
-				(setf new_copy_state (make-state-copy copy_state))
-				(setf (nth trip_i (shifts-trips_list new_copy_state)) (append (nth trip_i (shifts-trips_list new_copy_state)) (list trip_non_al)) )
-				(setf list_successors (append list_successors (list new_copy_state)))		
-			)
-			(
-				(and 	(not (equal (trip-local_departure trip_non_al) (trip-local_arrival (nth 0 (last (nth trip_i state_trip_list)))) ))
-						(>= (trip-instant_departure trip_non_al) (sum (trip-instant_arrival (nth 0 (last (nth trip_i state_trip_list) ))) ) )
-						
-				)
-			)
 		)
 		
 	)
@@ -171,5 +191,5 @@
 ; (setf gentest (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "melhor.abordagem"))
 (setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447)))))
 
-(setf test_state_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L1 L2 34 60) (L5 L1 408 447)))))
+(setf test_state_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L3 L2 65 80) (L5 L1 408 447)))))
 
