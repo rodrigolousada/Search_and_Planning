@@ -37,8 +37,10 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;                        Aux Functions
+;;;                Structure auxiliar Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Creates a fake initial state with L1 and 0
 (defun create-initial-state ()
 	(return-from create-initial-state (make-trip 
 										:local_departure "L1" 
@@ -49,6 +51,26 @@
 	)
 )
 
+;; Sorts list of trips by instant of departure
+( defun sort-list (problem)
+	(return-from sort-list (sort problem #'< :key #'trip-instant_departure))
+)
+
+;; Turn trips gave in the problem into instances of structure trip
+(defun create-trip-prob (prob)
+	(setf list_trips '())
+	
+	(dolist (e  prob)
+		(setf list_trips (append list_trips (list (make-trip :local_departure (nth 0 e)
+															 :local_arrival (nth 1 e)
+															 :instant_departure (nth 2 e)
+															 :instant_arrival (nth 3 e)
+													))))
+	)
+	(return-from create-trip-prob (sort-list list_trips))
+)
+
+;; Makes deep copy of our structur shifts
 (defun make-state-copy (state)
 	(setf new_state (make-shifts 	
 							:trips_list (copy-list (shifts-trips_list state))
@@ -56,39 +78,33 @@
 	(return-from make-state-copy new_state)
 )
 
-;; Instrucoes de leitura para a Sofia:
-;;
-;;'''''''xxxxxx''''''xxxxxx
-;;'''''xxxxxxxxxx''xxxxxxxxxx
-;;''''xxxxxxxxxxxxxxxx''''xxxx
-;;'''xxxxxxxxxxxxxxxxxx''''xxxx
-;;'''xxxxxxxxxxxxxxxxxxx''xxxxx
-;;'''xxxxxxxxxxxxxxxxxxx 'xxxxx'
-;;'''''xxxxxxxxxxxxxxxxxxxxx
-;;''''''''xxxxxxxxxxxxxxxx
-;;''''''''''xxxxxxxxxxxxx
-;;''''''''''''xxxxxxxx
-;;''''''''''''''xxxx
-;;
-;;		1) Antes demais e fulcral entender que eu gosto muito dela
-;;		2) Esperar que tenha dormido bem
-;;		3) Admitir que eu estava a ser irritante
-;;		4) Compensa-la por isso e esperar que fique feliz com o que fiz xD
-;;
-;;		Agora relativo ao trabalho
-;;		1) Apenas passei para código o que estava na cabeça (que espero que esteja a funcionar)
-;;		2) Confere se concordas com o racicionio e/ou se me espalhei em algum lado
-;;		3) Para ser mais fácil acompanhar o processo acabei a estar sempre a nomear as coisas (para nao acabar com linhas muito grandes e imperceptiveis)
-;;		3.1) Eu sei que fica cheio de linhas de codigo e nao gostas
-;;		3.1.1) Mas ao menos usei us setf como gostas <3
-;;		4) Traducao para 4 siglas que vais ver nos nomes
-;;				ld -> local_departure
-;;				la -> local_arrival
-;;				id -> instant_departure
-;;				ia -> instant_arrival
-;;		5) Quando uso setfs para algum objecto comeco por fazer do departure (local e instant) e depois arrival (local e instant)
-;;		6) Gosto muito de trabalhar contigo		
-;;		7) Desculpa mais uma vez!
+
+;; Translates final state from strcuture shift into list of lists
+(defun translate_solution (solution_struct)
+	(setf solution_list (list))
+	(setf shifts_list (shifts-trips_list solution_struct))
+	(dolist (shift shifts_list)
+			(setf shift_list (list))
+			(dolist (trip_struct shift)
+				(setf trip_list (list 	(trip-local_departure trip_struct)
+										(trip-local_arrival trip_struct)
+										(trip-instant_departure trip_struct)
+										(trip-instant_arrival trip_struct)))
+				(setf shift_list (append shift_list (list trip_list)))
+			)
+			(setf solution_list (append solution_list (list shift_list)))
+	)
+	(return-from  translate_solution solution_list)
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                     Auxiliar Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;	ld -> local_departure
+;;	la -> local_arrival
+;;	id -> instant_departure
+;;	ia -> instant_arrival
 
 (defun successors (state)
 	(setf list_successors (list))
@@ -126,7 +142,7 @@
 	(dotimes (shift_i (length state_trip_list)  )
 		;;Existing shift
 		(setf this_shift (nth shift_i state_trip_list))
-		(print (first this_shift))
+		; (print (first this_shift))
 		(setf shift_ld (trip-local_departure (first this_shift)))
 		(if (equal 'L1 shift_ld)
 				(setf start_penalty 0)
@@ -178,20 +194,13 @@
 	(= 0 (list-length non_allocated_trips)) ;;(shifts-non_allocated_trips state)
 )
 
-(defun create-trip-prob (prob)
-	;; talvez seja necessario fazer sort do prob
-	(setf list_trips '())
-	;;(print prob)
-	(dolist (e  prob)
-		(setf list_trips (append list_trips (list (make-trip :local_departure (nth 0 e)
-															 :local_arrival (nth 1 e)
-															 :instant_departure (nth 2 e)
-															 :instant_arrival (nth 3 e)
-													))))
-	)
-	(return-from create-trip-prob list_trips)
-)
 
+; (defun a-star-heuristic (state)
+
+; )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                     Solution function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun faz-afectacao (problem strategy)
@@ -250,3 +259,6 @@
 
 (setf test_state_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L3 L2 65 80) (L5 L1 408 447)))))
 
+(setf test_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) :non_allocated_trips (create-trip-prob '( (L5 L6 300 480)  ))) )
+
+(setf test_sort  (create-trip-prob '((L1 L4 100 300) (L4 L3 10 40) (L5 L8 30 100) (L6 L6 20 40)))) 
