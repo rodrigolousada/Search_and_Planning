@@ -242,7 +242,7 @@
 			(setf break_between (- next_id this_ia))
 			(cond ((>= break_between meal_time) (setf last_meal next_id)))
 		)
-			(format t "Last Meal ~D Shift id ~D ~%" last_meal shift_id)
+		;;(format t "Last Meal ~D Shift id ~D ~%" last_meal shift_id)
 		(cond 	(
 				(and 	
 					(and	(>= new_id (+ shift_ia change_station_penalty))
@@ -252,7 +252,7 @@
 							(>= new_id (+ shift_ia meal_treshold))
 					)
 				)	
-					(format t "Subtraction Total: ~D Last Arrival: ~D Firts departure: ~D ~%"  (- new_ia_if_last shift_id) new_ia_if_last shift_id )
+					;;(format t "Subtraction Total: ~D Last Arrival: ~D Firts departure: ~D ~%"  (- new_ia_if_last shift_id) new_ia_if_last shift_id )
 					(setf new_copy_state (make-state-copy copy_state))
 					(setf (nth shift_i (shifts-trips_list new_copy_state)) (append (nth shift_i (shifts-trips_list new_copy_state)) (list trip_non_al)) )
 					(setf list_successors (append list_successors (list new_copy_state)))
@@ -318,12 +318,12 @@
 					
 					(setf flag 0)
 					(cond 	( 	(equal shift_index 0)
-									(print "inicial")
+									;;(print "inicial")
 									(if (not (equal 'L1 (trip-instant_departure (nth shift_index listshift)) ))
 										(progn 
 											(setf flag 40)
 											(if (not (equal nil (nth (+ shift_index 1) listshift)))
-												(progn (print "meio")
+												(progn ;;(print "meio")
 												(setf inc_waste (+ inc_waste (- (trip-instant_departure (nth (+ shift_index 1) listshift)) 
 													(trip-instant_arrival (nth shift_index listshift)) ) )))
 											)
@@ -332,20 +332,20 @@
 							)
 
 							( 	(not (equal nil (nth (+ shift_index 1) listshift))) 
-								(print  "meio")
+								;;(print  "meio")
 								(setf inc_waste (+ inc_waste (- (trip-instant_departure (nth (+ shift_index 1) listshift)) 
 										(trip-instant_arrival (nth shift_index listshift)) ) ))
 
 							)
 							( (equal shift_index (- (list-length listshift) 1))
-								(print "final")
+								;;(print "final")
 								(if
 									(> 360  (trip-instant_arrival (nth shift_index listshift)))
 										(cond 
 											( 	(not (equal 'L1 (trip-instant_arrival (nth shift_index listshift)) ))
-												(print "entrou nao L1")
+												;;(print "entrou nao L1")
 												(if (< (+ flag 40) (- 360 (trip-instant_arrival (nth shift_index listshift)) ))
-													(progn (print "add")
+													(progn ;;(print "add")
 													(setf inc_waste (+  inc_waste  (- 360 (trip-instant_arrival (nth shift_index listshift)) ) )  ))
 													(setf inc_waste (+  inc_waste  (+ flag 40) )  )
 												)
@@ -361,7 +361,7 @@
 
 									(cond
 										( 	(not (equal 'L1 (trip-instant_arrival (nth shift_index listshift)) ))
-											(print "entrou bonito")
+											;;(print "entrou bonito")
 											(setf inc_waste (+ (+ inc_waste 40) flag) )
 										)
 										( 	(equal 'L1 (trip-instant_arrival (nth shift_index listshift)) )
@@ -451,53 +451,46 @@
 ; 	)
 ; 	(return-from sondagem-iterativa current_state)
 ; )
-(defun random_nth (list)
-  	(if (= (length list) 0)
-	  	nil
-	  	(nth (random (length list)) list))
+
+(defun sondagem-iterativa (state)
+	(setf initial_prob (cria-problema state 
+ 									(list #'successors) 
+ 									:objectivo? #'is-goal 
+ 									;;:estado= #'state-is-equal 
+ 									;;:heuristica #'sum_cost 
+ 									))
+									
+	(setf initial_state (problema-estado-inicial initial_prob))
+	(setf objectivo? (problema-objectivo? initial_prob))
+	(setf path (list))
+	(setf is_best_found nil)
+	(setf generated_node 0)
+	(setf expanded_nodes 0)
+	(setf start-time (get-internal-run-time))
+		
+	(labels (
+				(random-nth (list)
+					  (if (= 0 (length list))
+						  nil
+						  (nth (random (length list)) list))
+				)
+				(randomized-successor (estado)
+					(cond ((null estado) (list)) 
+						  ((funcall objectivo? estado) (setf is_best_found t) (list estado))
+						  (t 	(setf sucessores (problema-gera-sucessores initial_prob estado))
+								(setf random_sucessor (random-nth sucessores))
+								(incf expanded_nodes)
+								(setf generated_node (+ generated_node (length sucessores)))
+								(append (list random_sucessor) (randomized-successor random_sucessor)))
+					)
+				)
+			)					
+			(loop while (not is_best_found) do 
+				(setf path (randomized-successor initial_state)))
+			(list path (- (get-internal-run-time) start-time) expanded_nodes generated_node)
+			(setf best_state (nth 0 (last path)))
+	)
 )
-
-; (defun sondagem-iterativa (state)
-; 	(setf initial_prob (cria-problema state 
-; 									(list #'successors) 
-; 									:objectivo? #'is-goal 
-; 									;;:estado= #'state-is-equal 
-; 									;;:heuristica #'sum_cost 
-; 									))
-; 	(setf initial_state (problema-estado-inicial initial_prob))
-; 	(setf best_state_found nil)
-; 	(setf path (list))
-; 	(setf explored_nodes 0)
-; 	(setf generated_nodes 0)
-; 	(start-clock)
-
-; 	(labels (
-; 			(randomized_successor (state1)
-; 				(cond 	((null state1) (list)) 
-; 						((funcall #'is-goal state1) (setf best_state_found t) (list state1)))
-; 				(setf all_successors (problema-gera-sucessores initial_prob state1))
-; 		  		(setf random_sucessor (random_nth all_successors))
-; 		  		(incf explored_nodes)
-; 		  		(setf generated_nodes (+ generated_nodes (length all_successors)))
-; 				(append (list random_sucessor) (randomized_successor random_sucessor))
-; 			)
-; 			)				
-					
-; 		(loop while (not best_state_found) do 
-; 			(setf path (randomized_successor initial_state))
-; 		)
-	   	
-; 	   	(list path (timePassed) explored_nodes generated_nodes)
-; 		(setf best_state (nth 0 (last (first path))))
-; 	)
-; 	; (setf time_spent (/ (second solution) UNITS_PER_SECOND))
-; 	; (setf explored_nodes (third solution))
-; 	; (setf generated_nodes (fourth solution))
-	
-
-; 	;;(return-from sondagem-iterativa best_state)
-
-; )
 
 ;;(defun ilds (state)
 ;;)
@@ -542,7 +535,7 @@
 (setf test_a_star_heur (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica.alternativa"))
 
 (setf gentest (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica"))
-; (setf test_sampling (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "sondagem.iterativa"))
+(setf test_sampling (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "sondagem.iterativa"))
 
 (setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551)))))
 
