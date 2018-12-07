@@ -199,7 +199,7 @@
 				(setf new_end_penalty 0)
 				(setf new_end_penalty penalty))
 	
-	(setf new_id_if_first (+ new_id new_start_penalty))	
+	(setf new_id_if_first (- new_id new_start_penalty))	
 	(setf new_ia_if_last (+ new_ia new_end_penalty))
 	
 	;;(format t "New is ready~%")
@@ -214,7 +214,8 @@
 				(setf start_penalty 0)
 				(setf start_penalty penalty))
 		(setf shift_id (- (trip-instant_departure (first this_shift)) start_penalty))
-		
+		; (format t "Shift id principio ~D has Shift ~D and list ~D ~%"  shift_id this_shift (first this_shift))
+
 		(setf shift_la (trip-local_arrival (nth 0 (last this_shift))))
 		(setf shift_ia (trip-instant_arrival (nth 0 (last this_shift))))
 		(if (equal shift_la new_ld)
@@ -222,6 +223,7 @@
 				(setf change_station_penalty penalty))
 		
 		;;Get Last meal time
+
 		(setf last_meal shift_id)
 		(dotimes (trip_i (- (length this_shift) 1))
 			(setf this_trip (nth trip_i this_shift))
@@ -231,7 +233,7 @@
 			(setf break_between (- next_id this_ia))
 			(cond ((>= break_between meal_time) (setf last_meal next_id)))
 		)
-		
+			(format t "Last Meal ~D Shift id ~D ~%" last_meal shift_id)
 		(cond 	(
 				(and 	
 					(and	(>= new_id (+ shift_ia change_station_penalty))
@@ -240,7 +242,8 @@
 					(or 	(>= meal_treshold (- new_ia last_meal))
 							(>= new_id (+ shift_ia meal_treshold))
 					)
-				)
+				)	
+					(format t "Subtraction Total: ~D Last Arrival: ~D Firts departure: ~D ~%"  (- new_ia_if_last shift_id) new_ia_if_last shift_id )
 					(setf new_copy_state (make-state-copy copy_state))
 					(setf (nth shift_i (shifts-trips_list new_copy_state)) (append (nth shift_i (shifts-trips_list new_copy_state)) (list trip_non_al)) )
 					(setf list_successors (append list_successors (list new_copy_state)))
