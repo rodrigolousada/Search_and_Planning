@@ -5,15 +5,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package :user) 
-(setf *random-state* (make-random-state t))
 (compile-file "procura.lisp")
 (load "procura")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;                        Global Var
+;;;                        Time variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(setf UNITS_PER_SECOND internal-time-units-per-second)
+(setf START_TIME nil)
+(setf TIME_LIMIT 240)
+
+(defun start-clock () (setf START_TIME (get-internal-real-time)))
+(defun timePassed () 
+	(float (/ (- (get-internal-real-time) START_TIME) UNITS_PER_SECOND))
+)
+
+(setf BEST_STATE nil)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                        Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -270,6 +279,10 @@
 	(= 0 (length (shifts-non_allocated_trips state)))
 )
 
+(defun is-goal-by-depth (state depth)
+	(= (- (length (shifts-non_allocated_trips state)) depth) (length (shifts-non_allocated_trips state)))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                     Heuristic functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,7 +293,7 @@
 
 (defun cost-shift-quant (state)
 	(setf quant_shifts (length (shifts-trips_list state)))
-	(return-from cost-shift-quant (* quant_shifts 10))
+	(return-from cost-shift-quant (* quant_shifts 480))
 )
 
 (defun cost-before-six (state)
@@ -291,6 +304,10 @@
 		)
 	)
 	(return-from cost-before-six cost )
+)
+
+(defun sum_cost (state)
+	(return-from sum_cost (+ (cost-time-wasted state) (cost-shift-quant state) ))
 )
 
 (defun cost-time-wasted (state)
@@ -369,20 +386,118 @@
 ;;)
 
 (defun a-star-best-heuristic (state)
-	(setf int-prob  (cria-problema state 
+	(setf initial_prob  (cria-problema state 
 									(list #'successors) 
 									:objectivo? #'is-goal 
 									:estado= #'state-is-equal 
 									:heuristica #'cost-shift-quant))
-	(setf best-state (last (first (procura int-prob "a*" :espaco-em-arvore? t))))
-	(return-from a-star-best-heuristic (nth 0 best-state))
+	(setf solution (procura initial_prob "a*" :espaco-em-arvore? t))
+	(setf best_state (nth 0 (last (first solution))))
+	(setf time_spent (/ (second solution) UNITS_PER_SECOND))
+	(setf explored_nodes (third solution))
+	(setf generated_nodes (fourth solution))
+	(return-from a-star-best-heuristic best_state)
 )
 
-;;(defun a-star-alterantive-heuristic (state)
-;;)
+(defun a-star-alternative-heuristic (state)
+	(setf initial_prob  (cria-problema state 
+									(list #'successors) 
+									:objectivo? #'is-goal 
+									:estado= #'state-is-equal 
+									:heuristica #'sum_cost ))
+	(setf solution (procura initial_prob "a*" :espaco-em-arvore? t))
+	(setf best_state (nth 0 (last (first solution))))
+	(setf time_spent (/ (second solution) UNITS_PER_SECOND))
+	(setf explored_nodes (third solution))
+	(setf generated_nodes (fourth solution))
+	(return-from a-star-alternative-heuristic best_state)
+)
 
-;;(defun sondagem-iterativa (state)
-;;)
+; (defun sondagem-iterativa (state)
+; 	(setf num_non_alloc (length (shifts-non_allocated_trips state)))
+; 	(setf depth 0)
+; 	(setf last_depth 0)
+; 	(setf step_interval (TIME_LIMIT))
+; 	(setf generated_nodes 0)
+; 	(setf explored_nodes 0)
+; 	(start-clock)
+; 	(loop while (< (timePassed) TIME_LIMIT) do ;;or DEPTH
+; 		(setf current_solution (procura  (cria-problema state 
+; 													(list #'successors) 
+; 													:objectivo? #'(lambda (state) (= (- num_non_alloc depth) num_non_alloc))
+; 													:estado= #'state-is-equal 
+; 													:heuristica #'sum_cost)
+; 								"a*"
+; 								:espaco-em-arvore? t
+; 								)
+; 		)
+; 		(setf current_state (nth 0 (last (first current_solution)))
+; 		(setf explored_nodes (+ explored_nodes (third current_solution)))
+; 		(setf generated_nodes (+ generated_nodes (fourth current_solution)))
+; 	)
+; 	(cond 	((not(is-goal(current_state)))
+; 				(setf current_solution (procura  (cria-problema state 
+; 													(list #'successors) 
+; 													:objectivo? #'(lambda (state) (= (- num_non_alloc depth) num_non_alloc))
+; 													:estado= #'state-is-equal 
+; 													:heuristica #'sum_cost)
+; 								"a*"
+; 								:espaco-em-arvore? t
+; 								))
+; 				(setf current_state (nth 0 (last (first current_solution))))
+; 				(setf explored_nodes (+ explored_nodes (third current_solution)))
+; 				(setf generated_nodes (+ generated_nodes (fourth current_solution)))
+; 			)
+; 	)
+; 	(return-from sondagem-iterativa current_state)
+; )
+(defun random_nth (list)
+  	(if (= (length list) 0)
+	  	nil
+	  	(nth (random (length list)) list))
+)
+
+; (defun sondagem-iterativa (state)
+; 	(setf initial_prob (cria-problema state 
+; 									(list #'successors) 
+; 									:objectivo? #'is-goal 
+; 									;;:estado= #'state-is-equal 
+; 									;;:heuristica #'sum_cost 
+; 									))
+; 	(setf initial_state (problema-estado-inicial initial_prob))
+; 	(setf best_state_found nil)
+; 	(setf path (list))
+; 	(setf explored_nodes 0)
+; 	(setf generated_nodes 0)
+; 	(start-clock)
+
+; 	(labels (
+; 			(randomized_successor (state1)
+; 				(cond 	((null state1) (list)) 
+; 						((funcall #'is-goal state1) (setf best_state_found t) (list state1)))
+; 				(setf all_successors (problema-gera-sucessores initial_prob state1))
+; 		  		(setf random_sucessor (random_nth all_successors))
+; 		  		(incf explored_nodes)
+; 		  		(setf generated_nodes (+ generated_nodes (length all_successors)))
+; 				(append (list random_sucessor) (randomized_successor random_sucessor))
+; 			)
+; 			)				
+					
+; 		(loop while (not best_state_found) do 
+; 			(setf path (randomized_successor initial_state))
+; 		)
+	   	
+; 	   	(list path (timePassed) explored_nodes generated_nodes)
+; 		(setf best_state (nth 0 (last (first path))))
+; 	)
+; 	; (setf time_spent (/ (second solution) UNITS_PER_SECOND))
+; 	; (setf explored_nodes (third solution))
+; 	; (setf generated_nodes (fourth solution))
+	
+
+; 	;;(return-from sondagem-iterativa best_state)
+
+; )
 
 ;;(defun ilds (state)
 ;;)
@@ -424,9 +539,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                        Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setf test_a_star_heur (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica.alternativa"))
 
 (setf gentest (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica"))
-(setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447)))))
+; (setf test_sampling (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "sondagem.iterativa"))
+
+(setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551)))))
 
 (setf test_state_suc_1 (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L3 L2 65 80) (L5 L1 408 447)))))
 
@@ -443,5 +561,7 @@
  															:non_allocated_trips '() )))
 ; (setf test_cost_before_six (cost-before-six (make-shifts 	:trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) 
 ;															:non_allocated_trips '() )))
+
+(setf test_a_star_alter (translate_solution (a-star-alternative-heuristic test_state)))
 
 (setf test_a_star (translate_solution (a-star-best-heuristic test_state)))
