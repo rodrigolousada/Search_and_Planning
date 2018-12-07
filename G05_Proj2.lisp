@@ -14,7 +14,6 @@
 ;;;                        Global Var
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                        Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,6 +95,109 @@
 	)
 	(return-from  translate_solution solution_list)
 )
+
+(defun module (number)
+	(return-from module (sqrt (* number number)))
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;            		    Cost Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; goal is to minimize the cost
+
+(defun cost-size-shifts (state)
+	(setf cost 0)
+	(dolist (listshift (shifts-trips_list state))
+		(setf cost (+ cost (- (trip-instant_arrival (nth 0 (last listshift))) (trip-instant_departure (first listshift)))))
+	)
+	(return-from cost-size-shifts cost )
+)
+
+(defun cost-shift-quant (state)
+	(setf quant_shifts (list-length (shifts-trips_list state)))
+	(return-from cost-shift-quant quant_shifts*10)
+)
+
+(defun cost-before-six (state)
+	(setf cost 0)
+	(dolist (listshift (shifts-trips_list state))
+		(if (> 360 (trip-instant_arrival (nth 0 (last listshift))))
+			(setf cost (+ cost  (- 360 (trip-instant_arrival (nth 0 (last listshift))) )))
+		)
+	)
+	(return-from cost-before-six cost )
+)
+
+(defun cost-time-wasted (state)
+	(setf inc_waste 0)
+	(dolist (listshift (shifts-trips_list state))
+		
+		(dotimes (shift_index (list-length listshift))
+					
+					(setf flag 0)
+					(cond 	( 	(equal shift_index 0)
+									(print "inicial")
+									(if (not (equal 'L1 (trip-instant_departure (nth shift_index listshift)) ))
+										(progn 
+											(setf flag 40)
+											(if (not (equal nil (nth (+ shift_index 1) listshift)))
+												(progn (print "meio")
+												(setf inc_waste (+ inc_waste (- (trip-instant_departure (nth (+ shift_index 1) listshift)) 
+													(trip-instant_arrival (nth shift_index listshift)) ) )))
+											)
+										)
+									)
+							)
+
+							( 	(not (equal nil (nth (+ shift_index 1) listshift))) 
+								(print  "meio")
+								(setf inc_waste (+ inc_waste (- (trip-instant_departure (nth (+ shift_index 1) listshift)) 
+										(trip-instant_arrival (nth shift_index listshift)) ) ))
+
+							)
+							( (equal shift_index (- (list-length listshift) 1))
+								(print "final")
+								(if
+									(> 360  (trip-instant_arrival (nth shift_index listshift)))
+										(cond 
+											( 	(not (equal 'L1 (trip-instant_arrival (nth shift_index listshift)) ))
+												(print "entrou nao L1")
+												(if (< (+ flag 40) (- 360 (trip-instant_arrival (nth shift_index listshift)) ))
+													(progn (print "add")
+													(setf inc_waste (+  inc_waste  (- 360 (trip-instant_arrival (nth shift_index listshift)) ) )  ))
+													(setf inc_waste (+  inc_waste  (+ flag 40) )  )
+												)
+											)
+											( 	(equal 'L1 (trip-instant_arrival (nth shift_index listshift)) )
+												(if (< flag (- 360 (trip-instant_arrival (nth shift_index listshift)) ))
+													(setf inc_waste (+  inc_waste  (- 360 (trip-instant_arrival (nth shift_index listshift)) ) )  )
+													(setf inc_waste (+  inc_waste  flag )  )
+												)
+											)
+										)
+										
+
+									(cond
+										( 	(not (equal 'L1 (trip-instant_arrival (nth shift_index listshift)) ))
+											(print "entrou bonito")
+											(setf inc_waste (+ (+ inc_waste 40) flag) )
+										)
+										( 	(equal 'L1 (trip-instant_arrival (nth shift_index listshift)) )
+											(setf inc_waste (+ inc_waste flag))
+										)
+									)
+								)
+							)
+
+					)						
+		)
+	)
+	(return-from cost-time-wasted inc_waste)
+)
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;                     Auxiliar Functions
@@ -194,8 +296,12 @@
 	(= 0 (list-length non_allocated_trips)) ;;(shifts-non_allocated_trips state)
 )
 
+(
+)
+
 
 ; (defun a-star-heuristic (state)
+; 	(if (is-goal state) (return-from a-star-heuristic 0))
 
 ; )
 
@@ -255,10 +361,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (setf gentest (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "melhor.abordagem"))
-(setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447)))))
+; (setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447)))))
 
-(setf test_state_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L3 L2 65 80) (L5 L1 408 447)))))
+; (setf test_state_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L1 1 25)))) :non_allocated_trips (create-trip-prob '(  (L3 L2 65 80) (L5 L1 408 447)))))
 
-(setf test_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) :non_allocated_trips (create-trip-prob '( (L5 L6 300 480)  ))) )
+; (setf test_suc (make-shifts :trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) :non_allocated_trips (create-trip-prob '( (L5 L6 300 480)))) )
 
-(setf test_sort  (create-trip-prob '((L1 L4 100 300) (L4 L3 10 40) (L5 L8 30 100) (L6 L6 20 40)))) 
+; (setf test_sort  (create-trip-prob '((L1 L4 100 300) (L4 L3 10 40) (L5 L8 30 100) (L6 L6 20 40)))) 
+
+; (setf test_cost_time_waste (cost-time-wasted (make-shifts 	:trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) 
+; 															:non_allocated_trips '() )))
+; (setf test_cost_size_shifts (cost-size-shifts (make-shifts 	:trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) 
+; 															:non_allocated_trips '() )))
+(setf test_cost_before_six (cost-before-six (make-shifts 	:trips_list (list (create-trip-prob '( (L2 L3 1 100) (L4 L1 190 200) )  ) ) 
+															:non_allocated_trips '() )))
