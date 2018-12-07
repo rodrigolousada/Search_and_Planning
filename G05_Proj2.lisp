@@ -464,8 +464,8 @@
 	(setf objectivo? (problema-objectivo? initial_prob))
 	(setf path (list))
 	(setf is_best_found nil)
-	(setf generated_node 0)
-	(setf expanded_nodes 0)
+	(setf *nos-expandidos* 0)
+	(setf *nos-gerados* 0)
 	(setf start-time (get-internal-run-time))
 		
 	(labels (
@@ -479,15 +479,15 @@
 						  ((funcall objectivo? estado) (setf is_best_found t) (list estado))
 						  (t 	(setf sucessores (problema-gera-sucessores initial_prob estado))
 								(setf random_sucessor (random-nth sucessores))
-								(incf expanded_nodes)
-								(setf generated_node (+ generated_node (length sucessores)))
+								(incf *nos-gerados*)
+								(setf *nos-expandidos* (+ *nos-expandidos* (length sucessores)))
 								(append (list random_sucessor) (randomized-successor random_sucessor)))
 					)
 				)
 			)					
 			(loop while (not is_best_found) do 
 				(setf path (randomized-successor initial_state)))
-			(list path (- (get-internal-run-time) start-time) expanded_nodes generated_node)
+			(list path (- (get-internal-run-time) start-time) *nos-gerados* *nos-expandidos*)
 			(setf best_state (nth 0 (last path)))
 	)
 )
@@ -533,9 +533,9 @@
 ;;;                        Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setf test_a_star_heur (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica.alternativa"))
-
 (setf gentest (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "a*.melhor.heuristica"))
 (setf test_sampling (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "sondagem.iterativa"))
+;(setf test_ilds (faz-afectacao '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551) (L1 L1 474 465) ) "sondagem.iterativa"))
 
 (setf test_state (make-shifts :trips_list '() :non_allocated_trips (create-trip-prob '( (L2 L1 1 25) (L1 L2 34 60) (L5 L1 408 447) (L1 L1 448 551)))))
 
