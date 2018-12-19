@@ -522,7 +522,7 @@
 			(setf best_state (loop_descrepancy state 0))
 			(list best_state (- (get-internal-run-time) start-time)  *nos-expandidos* *nos-gerados*)
 	)
-	(format t "best_state ~D time_spent ~D explored_nodes ~D generated_nodes ~D ~%" best_state *nos-expandidos* *nos-gerados* (/ (- (get-internal-run-time) start-time) UNITS_PER_SECOND) )
+	;;(format t "best_state ~D time_spent ~D explored_nodes ~D generated_nodes ~D ~%" best_state *nos-expandidos* *nos-gerados* (/ (- (get-internal-run-time) start-time) UNITS_PER_SECOND) )
 	(return-from ilds best_state)
 )
 
@@ -554,7 +554,7 @@
 		)
 		
 		(cond ((equal strategy "melhor.abordagem") 
-				(setf result_state (a-star-alternative-heuristic root_state)))
+				(setf result_state (ilds root_state)))
 			  ((equal strategy "a*.melhor.heuristica") 
 				(setf result_state (a-star-best-heuristic root_state)))
 			  ((equal strategy "a*.melhor.heuristica.alternativa") 
